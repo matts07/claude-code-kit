@@ -53,5 +53,6 @@ Critical or high advisories come first, each as its own PR.
 
 ## 4. Record and close
 Add a row to `docs/SECURITY-LOG.md`: date, scope, findings, outcome,
-restore-test result if quarterly. Then close the monthly reminder issue,
-if one is open.
+restore-test result if quarterly. Once the user approves the record,
+close the monthly reminder issue if one is open (closing it prompts
+through the guard; that approval covers it).

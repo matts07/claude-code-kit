@@ -13,7 +13,8 @@ Only the user starts this skill.
 Only if at least one PR merged into `main` since the last release. Direct
 pushes to `main` never justify one. If none: say so, and if the working
 branch has unmerged work, offer to PR it first (`/pr`); if the user
-chooses that, continue the release after it merges. Otherwise stop.
+chooses that, stop once it merges and tell them to run `/release` again
+(Claude can't start it). Otherwise stop.
 
 ## 2. Check readiness
 `main`'s latest CI run is green. If it's red, stop and report.

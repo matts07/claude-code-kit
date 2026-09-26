@@ -32,6 +32,12 @@ if [ "$PERMANENT_BRANCH" != "<feature-branch>" ]; then
   fi
 fi
 
+# Start of a git command up to its subcommand: git, then any global options
+# (-C <dir>, -c <key=value>, other flags). New patterns below match the
+# subcommand itself, so a ref or path containing "branch" or "checkout"
+# can't trigger them.
+gs='(^|[;&|[:space:]])git([[:space:]]+(-[cC][[:space:]]+[^[:space:];&|]+|-[^[:space:];&|]+))*[[:space:]]+'
+
 # Destructive patterns -> ask. Each entry: extended regex|description
 PATTERNS=(
   'git[[:space:]].*push.*[[:space:]](--force|--force-with-lease|--force-if-includes|-[a-zA-Z]*f([[:space:]]|$))|force-push'
@@ -41,11 +47,11 @@ PATTERNS=(
   'git[[:space:]].*reset.*--hard|reset --hard (discards work)'
   'git[[:space:]].*clean[[:space:]]+-[a-zA-Z]*[fdx]|git clean (deletes untracked files)'
   'git[[:space:]].*checkout.*(--[[:space:]]|[[:space:]]\.([[:space:]]|$))|checkout over working-tree changes'
-  'git[[:space:]][^;&|]*checkout[^;&|]*[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|checkout --force (discards changes)'
-  'git[[:space:]][^;&|]*switch[^;&|]*[[:space:]](-[a-z]*f[a-z]*|--force|--discard-changes)([[:space:];&|]|$)|switch discarding changes'
+  "$gs"'checkout([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|checkout --force (discards changes)'
+  "$gs"'switch([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force|--discard-changes)([[:space:];&|]|$)|switch discarding changes'
   'git[[:space:]].*restore([[:space:]]|$)|restore over working-tree changes'
-  'git[[:space:]][^;&|]*branch[^;&|]*[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|branch force-move (can orphan commits)'
-  'git[[:space:]][^;&|]*worktree[[:space:]]+remove[^;&|]*[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|worktree remove --force (discards its changes)'
+  "$gs"'branch([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|branch force-move (can orphan commits)'
+  "$gs"'worktree[[:space:]]+remove([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|worktree remove --force (discards its changes)'
   'git[[:space:]].*(rebase|filter-branch|filter-repo)([[:space:]]|$)|history rewrite'
   'git[[:space:]].*commit.*--amend|history rewrite (amend)'
   'git[[:space:]].*branch.*[[:space:]](-d|-D|--delete)([[:space:]]|$)|branch delete'
@@ -68,9 +74,9 @@ PATTERNS=(
 # differ from harmless ones only by case (-B/-C/-M vs -b/-c/-m), which the
 # lowercased match above can't tell apart.
 CASE_PATTERNS=(
-  'git[[:space:]][^;&|]*checkout[^;&|]*[[:space:]]-[a-zA-Z]*B[a-zA-Z]*([[:space:];&|]|$)|checkout -B (resets an existing branch)'
-  'git[[:space:]][^;&|]*switch[^;&|]*[[:space:]]-[a-zA-Z]*C[a-zA-Z]*([[:space:];&|]|$)|switch -C (resets an existing branch)'
-  'git[[:space:]][^;&|]*branch[^;&|]*[[:space:]]-[a-zA-Z]*[MC][a-zA-Z]*([[:space:];&|]|$)|branch -M/-C (overwrites an existing branch)'
+  "$gs"'checkout([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*B[a-zA-Z]*([[:space:];&|]|$)|checkout -B (resets an existing branch)'
+  "$gs"'switch([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*C[a-zA-Z]*([[:space:];&|]|$)|switch -C (resets an existing branch)'
+  "$gs"'branch([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*[MC][a-zA-Z]*([[:space:];&|]|$)|branch -M/-C (overwrites an existing branch)'
 )
 
 lower=$(printf '%s' "$cmd" | tr '[:upper:]' '[:lower:]')

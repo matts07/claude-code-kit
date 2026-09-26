@@ -81,9 +81,15 @@ Triggered by `v*` tags: same checks as CI, then create the release with
 the git host's CLI, skipping creation if the release already exists
 (web-UI releases create tag and release together). For example, with
 GitHub Actions and the `gh` CLI:
-```bash
-gh release view "${{ github.ref_name }}" > /dev/null 2>&1 || \
-  gh release create "${{ github.ref_name }}" --generate-notes --title "${{ github.ref_name }}"
+```yaml
+- name: Create release
+  env:
+    GH_TOKEN: ${{ github.token }}
+    GH_REPO: ${{ github.repository }}
+    TAG: ${{ github.ref_name }}  # passed via env, never interpolated into the script
+  run: |
+    gh release view "$TAG" > /dev/null 2>&1 || \
+      gh release create "$TAG" --generate-notes --title "$TAG"
 ```
 
 ## 9. Enforcement

@@ -40,9 +40,9 @@ go-ahead.
 4. For migrations: expand/contract followed; any data-loss step called
    out.
 5. For new user-tied state: backward-compatibility answer written down.
-6. Run the built-in `/code-review` on the changes. Fix what it confirms
-   (those fixes are part of this PR) and list anything left open in the
-   go-over.
+6. Run the built-in `/code-review` on the changes. Present what it
+   confirms in the go-over, each with a proposed fix; fixes the user
+   approves go into this PR before it opens.
 
 Any failure: stop and report. Don't open the PR.
 
