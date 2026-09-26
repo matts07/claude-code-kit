@@ -32,11 +32,14 @@ if [ "$PERMANENT_BRANCH" != "<feature-branch>" ]; then
   fi
 fi
 
-# Start of a git command up to its subcommand: git, then any global options
-# (-C <dir>, -c <key=value>, other flags). New patterns below match the
-# subcommand itself, so a ref or path containing "branch" or "checkout"
-# can't trigger them.
-gs='(^|[;&|[:space:]])git([[:space:]]+(-[cC][[:space:]]+[^[:space:];&|]+|-[^[:space:];&|]+))*[[:space:]]+'
+# Start of a git command up to its subcommand: git (bare, by path, or inside
+# ( ), $( ) or backticks), then any global options: those taking a separate
+# value (-C, -c, --git-dir, --work-tree, --namespace; value may be quoted)
+# and other flags. New patterns below match the subcommand itself, so a ref
+# or path containing "branch" or "checkout" can't trigger them.
+q="'"
+gv="(\"[^\"]*\"|$q[^$q]*$q|[^[:space:];&|]+)"
+gs="(^|[;&|(\`[:space:]/])git([[:space:]]+(-[cC]|--git-dir|--work-tree|--namespace)[[:space:]]+$gv|[[:space:]]+-[^[:space:];&|]+)*[[:space:]]+"
 
 # Destructive patterns -> ask. Each entry: extended regex|description
 PATTERNS=(
