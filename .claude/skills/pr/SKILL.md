@@ -23,8 +23,12 @@ go-ahead.
 ## 2. Gate
 1. Full build including typecheck/compile: must pass.
 2. Full test suite with coverage: must pass, and coverage must not drop.
-3. Docs for this feature are in this PR; docs describe `main` plus this PR
-   only.
+3. **Docs are complete.** From the diff, list every doc the change could
+   affect (README, user and developer guides, API reference, deploy guide
+   and its disaster-recovery table, `.env.example`, CLAUDE.md's Project
+   section, `.claude/rules/`). Mark each "updated" or "not affected,
+   because …". Any doc left unchecked or out of date: stop. Docs describe
+   `main` plus this PR only.
 4. For migrations: expand/contract followed; any data-loss step called
    out.
 5. For new user-tied state: backward-compatibility answer written down.
@@ -36,7 +40,8 @@ Any failure: stop and report. Don't open the PR.
 2. Write the title and body from that diff only, never from memory or from
    `docs/HISTORY.md` (that covers already-merged work).
 3. Fill every section of the PR template: what changed, why, how tested,
-   destructive changes (or "none"), follow-ups.
+   docs updated (the list from gate step 3), destructive changes (or
+   "none"), follow-ups.
 4. Updating an existing PR: re-read the full diff and rewrite the
    description to match it.
 

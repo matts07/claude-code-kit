@@ -142,8 +142,15 @@ a destination named there.
 
 - **If in doubt, ask.** Asking too much beats an action that can't be
   undone.
-- Agree the design before building anything non-trivial. Mock up UI
-  changes as a throwaway static HTML artifact (never committed) first.
+- Agree the design, including the doc plan, before building anything
+  non-trivial. Mock up UI changes as a throwaway static HTML artifact
+  (never committed) first.
+- **Done means code, tests, and docs.** A change isn't complete until
+  every doc it affects is updated on the same branch: README, user and
+  developer guides, API reference, the deploy guide and its
+  disaster-recovery table, `.env.example`, CLAUDE.md's Project section,
+  and `.claude/rules/` if a convention changed. Never defer docs to a
+  follow-up PR.
 - Verify in the running app against seeded data, with screenshots and
   direct state assertions, before committing or shipping.
 - Reproduce a bug before fixing it, and verify the fix against the real
