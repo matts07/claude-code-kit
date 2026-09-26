@@ -114,12 +114,24 @@ Check: `grep -rn '<feature-branch>\|<owner>/<repo>\|_TBD' CLAUDE.md .claude`
 returns nothing, except in `docs/BACKLOG.md` and deliberate
 `_None yet._` markers.
 
+**No stack yet** (a project that has rules and tooling but no app code):
+write what's genuinely undecided as "not chosen yet (filled by
+`/stack-setup`)" rather than leaving `_TBD`, and have the Project section
+say "no build or tests yet". The check above then passes honestly.
+
 ## 5. Scope the rules files
 
 For each file in `.claude/rules/`, put `paths:` frontmatter as its first
 lines (above the ADOPT comment), matching the project's real directories.
 Delete the ADOPT comment once scoped. Rules that would match nothing
 (e.g. `ui.md` with no UI) are dropped from the kit copy, not added.
+
+**No code directories yet:** don't drop rules just because nothing exists
+to match. Keep them unscoped (they load every session) with the ADOPT
+comment in place, scope anything that does exist (e.g. `ci-workflows.md`
+to the CI config), and add a `docs/BACKLOG.md` item to scope the rest in
+`/stack-setup`. Only drop a rule that will never apply (e.g. `ui.md` for a
+project that will never have a UI).
 
 ## 6. Merge settings and hooks
 
