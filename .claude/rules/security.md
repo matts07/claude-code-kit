@@ -48,5 +48,6 @@ paths:
 ## Dependencies
 - A new dependency needs approval (Present-first tier): say what it's for,
   its maintenance status, and its license.
+- Always commit the lockfile, and pin the runtime version.
 - High or critical advisories fail CI and are fixed right away in their
   own PR. Everything else goes to `/monthly-security-review`.

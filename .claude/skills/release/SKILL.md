@@ -11,9 +11,14 @@ Only the user starts this skill.
 
 ## 1. Is a release warranted?
 Only if at least one PR merged into `main` since the last release. Direct
-pushes to `main` never justify one. If none: say so and stop.
+pushes to `main` never justify one. If none: say so, and if the working
+branch has unmerged work, offer to PR it first (`/pr`); if the user
+chooses that, continue the release after it merges. Otherwise stop.
 
-## 2. Pick the version
+## 2. Check readiness
+`main`'s latest CI run is green. If it's red, stop and report.
+
+## 3. Pick the version
 - **Patch** (`x.y.Z`): refactors, bug fixes, code quality only.
 - **Minor** (`x.Y.0`): any new user-facing feature. One minor bump per
   release batch, however many features.
@@ -23,11 +28,11 @@ pushes to `main` never justify one. If none: say so and stop.
   production-ready, never on Claude's call.
 - `$ARGUMENTS` overrides the computed version; still show the reasoning.
 
-## 3. Draft notes
+## 4. Draft notes
 Build the notes from the merged PRs' squash commits since the last tag,
 not from memory. Show version and notes; wait for a yes.
 
-## 4. Cut it
+## 5. Cut it
 1. Create the `v*` tag on `main`'s head and push it. The release workflow
    runs the CI checks and creates the release, tolerating a release that
    already exists.
