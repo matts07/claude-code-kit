@@ -7,7 +7,14 @@ description: Build or change the CI/CD pipeline, deploy and rollback workflows, 
 
 Stack-neutral requirements, implemented with the chosen stack's own tools.
 Every change here is Present-first; follow `.claude/rules/ci-workflows.md`.
-Build in this order and present each piece before writing it.
+
+## 0. Ask, then propose
+1. Ask for the stack (language/runtime, frameworks, database, test runner,
+   packaging/artifact format) and the host, unless already decided.
+2. Propose, for approval, how each requirement below will be implemented
+   with that stack's own tools, plus the runtime version pin, lockfile,
+   coverage thresholds, and `.gitignore` additions. Build in this order
+   and present each piece before writing it.
 
 ## 1. CI
 - Runs on pushes to `main` and the working branch, and on PRs to `main`.
@@ -66,18 +73,37 @@ Implement the contract in `.claude/rules/code.md`.
 - Alerting is the CI system's failed-run notification only.
 - Server hosting: one shared set of SSH secrets (key, host, user);
   `ssh-keyscan` with retries and a longer timeout.
+- Schedules start disabled until the host and its secrets exist; tell the
+  user exactly what to set, and where.
 
 ## 8. Release workflow
 Triggered by `v*` tags: same checks as CI, then create the release with
 the git host's CLI, skipping creation if the release already exists
-(web-UI releases create tag and release together).
+(web-UI releases create tag and release together). For example, with
+GitHub Actions and the `gh` CLI:
+```yaml
+- name: Create release
+  env:
+    GH_TOKEN: ${{ github.token }}
+    GH_REPO: ${{ github.repository }}
+    TAG: ${{ github.ref_name }}  # passed via env, never interpolated into the script
+  run: |
+    gh release view "$TAG" > /dev/null 2>&1 || \
+      gh release create "$TAG" --generate-notes --title "$TAG"
+```
 
 ## 9. Enforcement
 - Branch protection on `main` where the host plan supports it.
 - Add `permissions.deny` entries in `.claude/settings.json` for any
   production host, database client, or credential path the project
   introduces (e.g. `Bash(ssh <prod-host> *)`, `Bash(psql *prod*)`).
+- Scope any still-unscoped files in `.claude/rules/` with `paths:`
+  frontmatter matching the real directories (drop `ui.md` if there's no
+  UI).
 
-## 10. Record
-Update CLAUDE.md's Project section (stack, commands), the deploy guide's
-disaster-recovery table, and `docs/DECISIONS.md` for choices made.
+## 10. Lint and record
+1. Lint every workflow with the CI system's linter (e.g. `actionlint` for
+   GitHub Actions) and `bash -n` any scripts.
+2. Update CLAUDE.md's Project section (stack, commands), the deploy
+   guide's disaster-recovery table, and `docs/DECISIONS.md` for choices
+   made.

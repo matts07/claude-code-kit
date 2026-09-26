@@ -19,14 +19,27 @@ emit() { # $1 = ask|deny, $2 = reason
 }
 
 # Hard block: deleting the permanent branch, locally or on the remote.
+# [^;&|] keeps each match inside one command, so "git branch -d other &&
+# git switch <permanent>" isn't mistaken for deleting the permanent branch.
 if [ "$PERMANENT_BRANCH" != "<feature-branch>" ]; then
   b=$(printf '%s' "$PERMANENT_BRANCH" | sed 's/[][\.*^$/]/\\&/g')
-  if printf '%s' "$cmd" | grep -Eq "git[[:space:]].*branch.*[[:space:]](-d|-D|--delete)[[:space:]]+(.*[[:space:]/])?$b([[:space:]]|$)" \
-    || printf '%s' "$cmd" | grep -Eq "git[[:space:]].*push.*[[:space:]](--delete|-d)[[:space:]]+(.*[[:space:]/])?$b([[:space:]]|$)" \
-    || printf '%s' "$cmd" | grep -Eq "git[[:space:]].*push.*[[:space:]]:$b([[:space:]]|$)"; then
+  seg='[^;&|]'
+  end='([[:space:];&|]|$)'
+  if printf '%s' "$cmd" | grep -Eq "git[[:space:]]$seg*branch$seg*[[:space:]](-d|-D|--delete)[[:space:]]+($seg*[[:space:]/])?$b$end" \
+    || printf '%s' "$cmd" | grep -Eq "git[[:space:]]$seg*push$seg*[[:space:]](--delete|-d)[[:space:]]+($seg*[[:space:]/])?$b$end" \
+    || printf '%s' "$cmd" | grep -Eq "git[[:space:]]$seg*push$seg*[[:space:]]:$b$end"; then
     emit deny "Blocked: '$PERMANENT_BRANCH' is the permanent working branch and is never deleted (CLAUDE.md)."
   fi
 fi
+
+# Start of a git command up to its subcommand: git (bare, by path, or inside
+# ( ), $( ) or backticks), then any global options: those taking a separate
+# value (-C, -c, --git-dir, --work-tree, --namespace; value may be quoted)
+# and other flags. New patterns below match the subcommand itself, so a ref
+# or path containing "branch" or "checkout" can't trigger them.
+q="'"
+gv="(\"[^\"]*\"|$q[^$q]*$q|[^[:space:];&|]+)"
+gs="(^|[;&|(\`[:space:]/])git([[:space:]]+(-[cC]|--git-dir|--work-tree|--namespace)[[:space:]]+$gv|[[:space:]]+-[^[:space:];&|]+)*[[:space:]]+"
 
 # Destructive patterns -> ask. Each entry: extended regex|description
 PATTERNS=(
@@ -37,7 +50,11 @@ PATTERNS=(
   'git[[:space:]].*reset.*--hard|reset --hard (discards work)'
   'git[[:space:]].*clean[[:space:]]+-[a-zA-Z]*[fdx]|git clean (deletes untracked files)'
   'git[[:space:]].*checkout.*(--[[:space:]]|[[:space:]]\.([[:space:]]|$))|checkout over working-tree changes'
+  "$gs"'checkout([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|checkout --force (discards changes)'
+  "$gs"'switch([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force|--discard-changes)([[:space:];&|]|$)|switch discarding changes'
   'git[[:space:]].*restore([[:space:]]|$)|restore over working-tree changes'
+  "$gs"'branch([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|branch force-move (can orphan commits)'
+  "$gs"'worktree[[:space:]]+remove([[:space:]][^;&|]*)?[[:space:]](-[a-z]*f[a-z]*|--force)([[:space:];&|]|$)|worktree remove --force (discards its changes)'
   'git[[:space:]].*(rebase|filter-branch|filter-repo)([[:space:]]|$)|history rewrite'
   'git[[:space:]].*commit.*--amend|history rewrite (amend)'
   'git[[:space:]].*branch.*[[:space:]](-d|-D|--delete)([[:space:]]|$)|branch delete'
@@ -46,18 +63,35 @@ PATTERNS=(
   'git[[:space:]].*(update-ref[[:space:]]+-d|reflog[[:space:]]+(expire|delete)|gc[[:space:]].*--prune)|ref or reflog deletion'
   '(^|[[:space:]]|/)gh[[:space:]].*[[:space:]]delete([[:space:]]|$)|git host resource delete'
   '(^|[[:space:]]|/)gh[[:space:]]+(pr|issue)[[:space:]]+close|closing a PR or issue'
-  '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*[rR]|--recursive)|recursive delete'
+  '(^|[;&|[:space:]])rm([[:space:]][^;&|]*)?[[:space:]](-[a-zA-Z]*r[a-zA-Z]*|--recursive)([[:space:]]|$)|recursive delete'
   '(drop[[:space:]]+(table|database|schema|column)|truncate[[:space:]]+(table[[:space:]]+)?[a-z_"`]|delete[[:space:]]+from)|destructive SQL'
   '(terraform|tofu)[[:space:]].*(destroy|apply)|infrastructure change'
   'kubectl[[:space:]].*(delete|drain)|cluster resource delete'
   'docker[[:space:]].*((volume|image|container|system)[[:space:]]+(rm|prune)|rmi)|container resource delete'
 )
 
+# Patterns using [^;&|]* stay inside one command, so a later command in a
+# chain (e.g. "&& git -C dir status") can't complete the match.
+#
+# Case-sensitive patterns, matched against the original command: these flags
+# differ from harmless ones only by case (-B/-C/-M vs -b/-c/-m), which the
+# lowercased match above can't tell apart.
+CASE_PATTERNS=(
+  "$gs"'checkout([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*B[a-zA-Z]*([[:space:];&|]|$)|checkout -B (resets an existing branch)'
+  "$gs"'switch([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*C[a-zA-Z]*([[:space:];&|]|$)|switch -C (resets an existing branch)'
+  "$gs"'branch([[:space:]][^;&|]*)?[[:space:]]-[a-zA-Z]*[MC][a-zA-Z]*([[:space:];&|]|$)|branch -M/-C (overwrites an existing branch)'
+)
+
 lower=$(printf '%s' "$cmd" | tr '[:upper:]' '[:lower:]')
-for entry in "${PATTERNS[@]}"; do
-  re="${entry%|*}"; desc="${entry##*|}"
-  if printf '%s' "$lower" | grep -Eq -- "$re"; then
-    emit ask "Destructive command ($desc). Per CLAUDE.md: say exactly what this destroys and whether it can be undone, and get explicit approval for this specific action."
-  fi
-done
+check() { # $1 = text to match, rest = entries
+  local text="$1" entry re desc; shift
+  for entry in "$@"; do
+    re="${entry%|*}"; desc="${entry##*|}"
+    if printf '%s' "$text" | grep -Eq -- "$re"; then
+      emit ask "Destructive command ($desc). Per CLAUDE.md: say exactly what this destroys and whether it can be undone, and get explicit approval for this specific action."
+    fi
+  done
+}
+check "$lower" "${PATTERNS[@]}"
+check "$cmd" "${CASE_PATTERNS[@]}"
 exit 0

@@ -12,7 +12,10 @@ The full pipeline requirements live in the /stack-setup skill.
 - **Permission scopes:** declaring any explicit permissions block usually
   resets every unlisted scope to none. A workflow that adds one write
   scope may also need read access to contents, or checkout fails with a
-  misleading "Repository not found".
+  misleading "Repository not found". Examples: creating a release with
+  the git host's CLI needs write access to contents; a secret-scan action
+  that lists a PR's commits (e.g. gitleaks-action) needs read access to
+  pull requests, or the repository's first PR fails with a 403.
 - **Least privilege:** each workflow grants only the scopes it needs.
 - **Pin third-party actions to a full commit SHA**, with the version in a
   comment. Prefer the git host's own CLI over third-party actions.

@@ -11,6 +11,10 @@ Only the user starts this skill. Claude never touches production directly:
 everything below goes through the deploy workflow, never a shell on a
 host.
 
+## 0. Is deploy set up?
+If the pipeline hasn't been built yet, stop: say deploy isn't set up and
+that `/stack-setup` builds it.
+
 ## 1. Preconditions (report and stop if any fails)
 1. Target build: `$ARGUMENTS` if given, otherwise `main`'s current commit.
    Its artifact must exist (built once by CI after merge). If it doesn't,
